@@ -1,2 +1,3 @@
-# Port-Watch
-A python-based port scanner and banner grabber built for learning the network reconnaissance fundamentals
+# PortWatch
+
+A lightweight, beginner-friendly Network Port Scanner and Banner Grabber written in Python.

@@ -39,6 +39,20 @@ def scan_single_port(target_ip,port):
         print(f"[!] System error scanning port {port}: {e}")
 if __name__=="__main__":
     resolved_ip=validate_and_resolve_target()
-    #Let's test our connection engine explicitly on Port 80 (Standard Web traffic)
-    print(f"[*] Initiating Day 3 connection test on port 80...")
-    scan_single_port(resolved_ip, 80)
+    try:
+        start_port=int(input("Enter the starting port(eg: 75): "))
+        end_port=int(input("Enter the ending port(eg: 95): "))
+        if start_port>end_port or start_port<1 or end_port>65535:
+            print("[!] Invalid port range configuration. Exiting.")
+            sys.exit()
+        print("_"*40)
+        print(f"[*] Scanning started on {resolved_ip}....")
+        print("[*] Please wait...")
+        print("_"*40)
+
+        for port in range(start_port,end_port+1):
+            scan_single_port(resolved_ip,port)
+        print("\n[+] Scan completed successfully.")
+    except ValueError:
+        print("[!]Error: ports must be whole numbers. Exiting.")
+        sys.exit()

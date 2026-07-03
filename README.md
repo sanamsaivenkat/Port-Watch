@@ -16,3 +16,10 @@ Today, I built the core scanning engine using Python's `socket` library. I learn
 - **`s.settimeout(1.0)`**: Crucial for tool performance. Prevents the scanner from getting stuck hanging indefinitely if a remote target is hidden behind an aggressive network firewall.
 - **`s.connect_ex()`**: Performs a low-level handshake knock on the port. If it catches a return value of `0`, the socket successfully established a connection (**Port is OPEN**). Any other error number indicates the port is closed or filtered.
 - **Resource Management**: I learned that every opened socket connection must be explicitly terminated with `s.close()` to avoid operating system memory leaks.
+
+## 🧠 What I Learned Today (Day 4)
+Today, I advanced the single-port script into a true **Port Range Scanner** by introducing looping control structures:
+- **`for port in range(start, end + 1)`**: I learned that Python's `range()` function is exclusive of the upper bound. Adding `+ 1` ensures that the final port selected by the user is actually scanned.
+- **Data Type Conversion**: Since user inputs via `input()` are strictly string data types, I utilized `int()` to explicitly convert inputs into integers so they work natively with network port calculations.
+- **UI Optimization**: Modified the connection engine to suppress logging "CLOSED" ports. This keeps the terminal clear and highlights only actionable intelligence (**OPEN** ports).
+- **Linear Time Complexity**: Observed that scanning sequentially scales execution time linearly ($O(n)$) based on the size of the port range, setting up the exact performance issue I will solve later with multi-threading.

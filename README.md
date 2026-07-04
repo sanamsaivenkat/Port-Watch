@@ -23,3 +23,10 @@ Today, I advanced the single-port script into a true **Port Range Scanner** by i
 - **Data Type Conversion**: Since user inputs via `input()` are strictly string data types, I utilized `int()` to explicitly convert inputs into integers so they work natively with network port calculations.
 - **UI Optimization**: Modified the connection engine to suppress logging "CLOSED" ports. This keeps the terminal clear and highlights only actionable intelligence (**OPEN** ports).
 - **Linear Time Complexity**: Observed that scanning sequentially scales execution time linearly ($O(n)$) based on the size of the port range, setting up the exact performance issue I will solve later with multi-threading.
+
+## 🧠 What I Learned Today (Day 5)
+Today, I advanced the scanner from simple port detection to **Application Exposure Assessment** via Banner Grabbing:
+- **Service Enumeration**: I learned that open ports run background software that broadcasts a greeting string (banner) upon connection. Capturing this helps security analysts identify software names and exact versions to map potential CVE vulnerabilities.
+- **Data Stream Catching (`s.recv(1024)`)**: Implemented a data buffer constraint to capture up to 1024 bytes of raw binary data directly from the active network socket channel.
+- **Data Normalization (`.decode(errors='ignore')`)**: Networks transmit raw bytes. I utilized string decoding configurations to format network traffic into clean, readable text strings while bypassing unmapped security characters.
+- **Nested Timeout Protections**: Learned that many defensive services or standard web servers (like Google on Port 80) remain silent until a valid client payload is sent. Handling `socket.timeout` within the execution tree prevents quiet services from breaking scanner flow.

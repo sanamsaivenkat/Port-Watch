@@ -31,10 +31,23 @@ def scan_single_port(target_ip,port):
         #interrupt error code result
         if result==0:
             print(f"[+] Port {port}: OPEN")
-        else:
-            print(f"[-] Port {port}: CLOSED")
-        #Cleanup the socket connection resource
-        s.close()
+            try:
+                # Attempt to grab the service banner
+                # We listen for up to 1024 bytes of data
+                raw_banner=s.recv(1024)
+                if raw_banner:
+                    # Decode the raw bytes into a standard text string
+                    clean_banner=raw_banner.decode(errors='ignore').strip()
+                    print(f"    [->] Banner Detected: {clean_banner}")
+                else:
+                    print("    [->] Banner: No response(Service is quiet)")
+            except socket.timeout:
+                # some ports are open but won't talk until you speak first
+                print("    [->] Banner: Timeout(Service requires a request)")
+        # else:
+        #     print(f"[-] Port {port}: CLOSED")
+        # #Cleanup the socket connection resource
+        # s.close()
     except Exception as e:
         print(f"[!] System error scanning port {port}: {e}")
 if __name__=="__main__":

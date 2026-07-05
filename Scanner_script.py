@@ -1,6 +1,20 @@
 import socket
 import sys
 
+common_ports={
+    21: "FTP",
+    22: "SSH",
+    23: "Telnet",
+    25: "SMTP",
+    53: "DNS",
+    80: "HTTP",
+    110: "POP3",
+    143: "IMAP",
+    443: "HTTPS",
+    3306: "MySQL",
+    3389: "RDP"
+}
+
 def validate_and_resolve_target():
     print("=== PortWatch Scanner ===")
     target=input("Enter target domain or IP(eg: google.com): ").strip()
@@ -30,7 +44,13 @@ def scan_single_port(target_ip,port):
         result=s.connect_ex((target_ip,port))
         #interrupt error code result
         if result==0:
-            print(f"[+] Port {port}: OPEN")
+            try:
+                # This queries your computer's OS database for the official name
+                service_name=socket.getservbyport(port,"tcp").upper()
+            except (OSError,OverflowError):
+                # Fallback to our custom list if the OS doesn't recognize it
+                service_name=common_ports.get(port,"unknown service")
+            print(f"[+] Port {port} ({service_name}): OPEN")
             try:
                 # Attempt to grab the service banner
                 # We listen for up to 1024 bytes of data

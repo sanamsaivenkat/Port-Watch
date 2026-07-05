@@ -30,3 +30,9 @@ Today, I advanced the scanner from simple port detection to **Application Exposu
 - **Data Stream Catching (`s.recv(1024)`)**: Implemented a data buffer constraint to capture up to 1024 bytes of raw binary data directly from the active network socket channel.
 - **Data Normalization (`.decode(errors='ignore')`)**: Networks transmit raw bytes. I utilized string decoding configurations to format network traffic into clean, readable text strings while bypassing unmapped security characters.
 - **Nested Timeout Protections**: Learned that many defensive services or standard web servers (like Google on Port 80) remain silent until a valid client payload is sent. Handling `socket.timeout` within the execution tree prevents quiet services from breaking scanner flow.
+
+## 🧠 What I Learned Today (Day 6)
+Today, I implemented **Service Mapping and Asset Identification** to translate raw numbers into meaningful intelligence:
+- **IANA Port Protocol Standards**: Learned that ports 0-1023 are "Well-Known Ports" reserved for fundamental structural services (like SSH, HTTP, and HTTPS).
+- **Dynamic OS Database Queries (`socket.getservbyport`)**: Instead of hardcoding thousands of ports manually, I leveraged native OS lookup functions to query the local network services translation layer dynamically.
+- **Failover Logic (Dictionary Backups)**: Created a hybrid lookup model. The tool first queries the system database; if the service is non-standard or unregistered, it gracefully drops back to a custom Python dictionary map or defaults cleanly to an "Unknown Service" string.

@@ -36,3 +36,10 @@ Today, I implemented **Service Mapping and Asset Identification** to translate r
 - **IANA Port Protocol Standards**: Learned that ports 0-1023 are "Well-Known Ports" reserved for fundamental structural services (like SSH, HTTP, and HTTPS).
 - **Dynamic OS Database Queries (`socket.getservbyport`)**: Instead of hardcoding thousands of ports manually, I leveraged native OS lookup functions to query the local network services translation layer dynamically.
 - **Failover Logic (Dictionary Backups)**: Created a hybrid lookup model. The tool first queries the system database; if the service is non-standard or unregistered, it gracefully drops back to a custom Python dictionary map or defaults cleanly to an "Unknown Service" string.
+
+## Usage
+
+```bash
+python3 Scanner_script.py
+```
+

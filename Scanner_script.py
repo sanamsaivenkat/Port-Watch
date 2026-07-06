@@ -1,6 +1,6 @@
 import socket
 import sys
-
+from concurrent.futures import ThreadPoolExecutor
 common_ports={
     21: "FTP",
     22: "SSH",
@@ -39,7 +39,7 @@ def scan_single_port(target_ip,port):
         #create an ipv4 tcp socket
         s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         #set 1-sec timelimit
-        s.settimeout(1.0)
+        s.settimeout(0.5)
         #attempt to connect with target and specified port
         result=s.connect_ex((target_ip,port))
         #interrupt error code result
@@ -68,8 +68,12 @@ def scan_single_port(target_ip,port):
         #     print(f"[-] Port {port}: CLOSED")
         # #Cleanup the socket connection resource
         # s.close()
+    except (socket.timeout, ConnectionRefusedError, OSError):
+        # Day 7 Upgrade: Quietly drop expected socket failures on closed/filtered ports
+        pass
     except Exception as e:
-        print(f"[!] System error scanning port {port}: {e}")
+        # Day 7 Upgrade: Safely capture true system runtime errors without crashing the thread pool
+        print(f"\n[!] Unexpected worker exception on port {port}: {e}")
 if __name__=="__main__":
     resolved_ip=validate_and_resolve_target()
     try:
@@ -83,8 +87,9 @@ if __name__=="__main__":
         print("[*] Please wait...")
         print("_"*40)
 
-        for port in range(start_port,end_port+1):
-            scan_single_port(resolved_ip,port)
+        with ThreadPoolExecutor(max_workers=50) as executor:
+            for port in range(start_port,end_port+1):
+                executor.submit(scan_single_port, resolved_ip, port)
         print("\n[+] Scan completed successfully.")
     except ValueError:
         print("[!]Error: ports must be whole numbers. Exiting.")

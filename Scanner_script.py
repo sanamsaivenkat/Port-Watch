@@ -14,7 +14,7 @@ common_ports={
     3306: "MySQL",
     3389: "RDP"
 }
-
+open_ports_found=[]
 def validate_and_resolve_target():
     print("=== PortWatch Scanner ===")
     target=input("Enter target domain or IP(eg: google.com): ").strip()
@@ -30,7 +30,7 @@ def validate_and_resolve_target():
 
         print(f"[*] Successffully resolved targget IP address: {target_ip}....")
         print("-" * 40)
-        return target_ip
+        return target_ip, target
     except socket.gaierror:
         print("[!] Error: Could not resolve host. check your spelling or Internet connection.")
         sys.exit()
@@ -58,12 +58,16 @@ def scan_single_port(target_ip,port):
                 if raw_banner:
                     # Decode the raw bytes into a standard text string
                     clean_banner=raw_banner.decode(errors='ignore').strip()
-                    print(f"    [->] Banner Detected: {clean_banner}")
+                    banner_line=f"    [->] Banner Detected: {clean_banner}"
                 else:
-                    print("    [->] Banner: No response(Service is quiet)")
+                    banner_line="    [->] Banner: No response(Service is quiet)"
             except socket.timeout:
                 # some ports are open but won't talk until you speak first
-                print("    [->] Banner: Timeout(Service requires a request)")
+                banner_line="    [->] Banner: Timeout(Service requires a request)"
+            print(banner_line)
+            #Save the result into our list so we can log it to a file later
+            open_ports_found.append((port,service_name,banner_line.strip()))
+        s.close()
         # else:
         #     print(f"[-] Port {port}: CLOSED")
         # #Cleanup the socket connection resource
@@ -75,7 +79,7 @@ def scan_single_port(target_ip,port):
         # Day 7 Upgrade: Safely capture true system runtime errors without crashing the thread pool
         print(f"\n[!] Unexpected worker exception on port {port}: {e}")
 if __name__=="__main__":
-    resolved_ip=validate_and_resolve_target()
+    resolved_ip,original_target=validate_and_resolve_target()
     try:
         start_port=int(input("Enter the starting port(eg: 75): "))
         end_port=int(input("Enter the ending port(eg: 95): "))
@@ -91,6 +95,24 @@ if __name__=="__main__":
             for port in range(start_port,end_port+1):
                 executor.submit(scan_single_port, resolved_ip, port)
         print("\n[+] Scan completed successfully.")
+        with open("scan_report.txt", "w") as report:
+            report.write("========================================\n")
+            report.write("          PORTWATCH SCAN REPORT         \n")
+            report.write("========================================\n")
+            report.write(f"Target Host: {original_target} ({resolved_ip})\n")
+            report.write(f"Scanned Range: {start_port} - {end_port}\n")
+            report.write("----------------------------------------\n\n")
+            if open_ports_found:
+                open_ports_found.sort()
+                for port,service, banner in open_ports_found:
+                    report.write(f"[+] Port {port} ({service}): OPEN\n")
+                    report.write(f"     {banner}\n\n")
+            else:
+                print("[-] No open ports discovered within the scanned range.\n")
+            report.write("\n========================================\n")
+            report.write("Scan terminated cleanly.\n")
+            
+        print("[+] Success! Report saved to 'scan_report.txt'.")
     except ValueError:
         print("[!]Error: ports must be whole numbers. Exiting.")
         sys.exit()

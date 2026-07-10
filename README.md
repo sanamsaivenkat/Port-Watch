@@ -48,3 +48,9 @@ Today, I transitioned the scanner from a volatile terminal-only application to a
 - **Thread-Safe Data Collection**: Because multiple background worker threads operate simultaneously, writing directly to a file from a thread can cause stream race conditions. I implemented a global list bucket (`open_ports_found`) to safely cache findings in memory until the multi-threaded scanning phase finishes completely.
 - **Context Managers (`with open()`)**: Mastered Python's `with open(filename, mode)` design pattern. It ensures safe file stream lifecycles, automatically parsing allocations and flushing changes to disk even if mid-execution system exceptions occur.
 - **Output File Modes (`"w"`)**: Employed the absolute write configuration flag (`"w"`) to auto-instantiate the `scan_report.txt` asset. This systematically wipes outdated audit historical tracking data on boot to present a fresh, unpolluted infrastructure report.
+
+## 🧠 What I Learned Today (Day 9)
+Today, I refactored the entire codebase to transform it into a professional, modular production script by applying clean software engineering principles:
+- **Eradicating Global State Variables**: Removed the volatile global list variable (`open_ports_found`). I learned that global variables create high risk for memory leaks and race conditions. Instead, tracking lists are now initialized locally within `main()` and passed explicitly as arguments down the execution tree.
+- **Single Responsibility Principle (SRP)**: Segregated the script logic into distinct, modular functional blocks. The file I/O operations were completely isolated into a dedicated `save_report()` function, separating reporting tasks from core scanning actions.
+- **Pythonic Docstring Standards**: Integrated structured triple-quote (`"""`) documentation directly under function definitions, detailing exact system lifecycles, entry parameters, and execution scopes.

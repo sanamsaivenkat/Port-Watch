@@ -1,21 +1,19 @@
 import socket
 import sys
 from concurrent.futures import ThreadPoolExecutor
+
+# Well-known infrastructure port fallbacks
 common_ports={
-    21: "FTP",
-    22: "SSH",
-    23: "Telnet",
-    25: "SMTP",
-    53: "DNS",
-    80: "HTTP",
-    110: "POP3",
-    143: "IMAP",
-    443: "HTTPS",
-    3306: "MySQL",
-    3389: "RDP"
+    21: "FTP", 22: "SSH", 23: "Telnet", 25: "SMTP",
+    53: "DNS", 80: "HTTP", 110: "POP3", 143: "IMAP",
+    443: "HTTPS", 3306: "MySQL", 3389: "RDP"
 }
-open_ports_found=[]
+
 def validate_and_resolve_target():
+    """
+    Prompts the user for a target and performs DNS resolution.
+    Returns a tuple of (target_ip, original_input_string).
+    """
     print("=== PortWatch Scanner ===")
     target=input("Enter target domain or IP(eg: google.com): ").strip()
 
@@ -34,7 +32,12 @@ def validate_and_resolve_target():
     except socket.gaierror:
         print("[!] Error: Could not resolve host. check your spelling or Internet connection.")
         sys.exit()
-def scan_single_port(target_ip,port):
+def scan_single_port(target_ip,port,storage_list):
+    """
+    Probes an explicit TCP port channel.
+    Resolves application layer service mappings and grabs application banners.
+    Saves discovered assets dynamically into the provided storage list.
+    """
     try:
         #create an ipv4 tcp socket
         s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -51,6 +54,8 @@ def scan_single_port(target_ip,port):
                 # Fallback to our custom list if the OS doesn't recognize it
                 service_name=common_ports.get(port,"unknown service")
             print(f"[+] Port {port} ({service_name}): OPEN")
+
+            banner_line=""
             try:
                 # Attempt to grab the service banner
                 # We listen for up to 1024 bytes of data
@@ -66,7 +71,8 @@ def scan_single_port(target_ip,port):
                 banner_line="    [->] Banner: Timeout(Service requires a request)"
             print(banner_line)
             #Save the result into our list so we can log it to a file later
-            open_ports_found.append((port,service_name,banner_line.strip()))
+            # Appending safely directly into the locally passed tracking list
+            storage_list.append((port,service_name,banner_line.strip()))
         s.close()
         # else:
         #     print(f"[-] Port {port}: CLOSED")
@@ -78,7 +84,32 @@ def scan_single_port(target_ip,port):
     except Exception as e:
         # Day 7 Upgrade: Safely capture true system runtime errors without crashing the thread pool
         print(f"\n[!] Unexpected worker exception on port {port}: {e}")
-if __name__=="__main__":
+def save_report(filename,target,target_ip,start_port,end_port,findings):
+    """
+    Handles report compilation File I/O tasks natively.
+    Sorts findings and dumps them into a structured text document.
+    """
+    print("[*] Generating report file...")
+    with open("scan_report.txt", "w") as report:
+        report.write("========================================\n")
+        report.write("          PORTWATCH SCAN REPORT         \n")
+        report.write("========================================\n")
+        report.write(f"Target Host: {target} ({target_ip})\n")
+        report.write(f"Scanned Range: {start_port} - {end_port}\n")
+        report.write("----------------------------------------\n\n")
+        if findings:
+            findings.sort()
+            for port,service, banner in findings:
+                report.write(f"[+] Port {port} ({service}): OPEN\n")
+                report.write(f"     {banner}\n\n")
+        else:
+            print("[-] No open ports discovered within the scanned range.\n")
+        report.write("\n========================================\n")
+        report.write("Scan terminated cleanly.\n")
+            
+    print(f"[+] Success! Report saved to {filename}.")
+
+def main():
     resolved_ip,original_target=validate_and_resolve_target()
     try:
         start_port=int(input("Enter the starting port(eg: 75): "))
@@ -90,29 +121,18 @@ if __name__=="__main__":
         print(f"[*] Scanning started on {resolved_ip}....")
         print("[*] Please wait...")
         print("_"*40)
+        # Isolated memory collection list (No longer a global threat
+        scan_findings=[]
 
         with ThreadPoolExecutor(max_workers=50) as executor:
             for port in range(start_port,end_port+1):
-                executor.submit(scan_single_port, resolved_ip, port)
+                executor.submit(scan_single_port, resolved_ip, port,scan_findings)
         print("\n[+] Scan completed successfully.")
-        with open("scan_report.txt", "w") as report:
-            report.write("========================================\n")
-            report.write("          PORTWATCH SCAN REPORT         \n")
-            report.write("========================================\n")
-            report.write(f"Target Host: {original_target} ({resolved_ip})\n")
-            report.write(f"Scanned Range: {start_port} - {end_port}\n")
-            report.write("----------------------------------------\n\n")
-            if open_ports_found:
-                open_ports_found.sort()
-                for port,service, banner in open_ports_found:
-                    report.write(f"[+] Port {port} ({service}): OPEN\n")
-                    report.write(f"     {banner}\n\n")
-            else:
-                print("[-] No open ports discovered within the scanned range.\n")
-            report.write("\n========================================\n")
-            report.write("Scan terminated cleanly.\n")
-            
-        print("[+] Success! Report saved to 'scan_report.txt'.")
+        # Trigger the newly isolated report module
+        save_report("scan_report.txt",original_target,resolved_ip,start_port,end_port,scan_findings)
+        
     except ValueError:
         print("[!]Error: ports must be whole numbers. Exiting.")
         sys.exit()
+if __name__=="__main__":
+    main()

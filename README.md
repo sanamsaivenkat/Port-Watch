@@ -1,56 +1,99 @@
-# PortWatch
+# 🔍 PortWatch
 
-A lightweight, beginner-friendly Network Port Scanner and Banner Grabber written in Python.
-## Day 1 
-Today , i have created the repo and add description and planned day 2.
+PortWatch is a high-speed, multi-threaded network reconnaissance tool written in Python. Designed for security analysts and network administrators, it performs rapid TCP port scanning, maps active ports to known system services, extracts application layer banner signatures, and compiles structural audit reports.
 
-## 🧠 What I Learned Today (Day 2)
-Today, I focused on **Target Scoping and Name Resolution**. Before a scanner can interact with a target, it must convert human-readable names into network-routable formats:
-- **DNS Resolution (`socket.gethostbyname`)**: I learned that computers communicate using IP addresses at the Network Layer, not domain names. This function queries DNS servers to translate domains (like `scanme.nmap.org`) into IP addresses.
-- **Input Guardrails**: Added checks to handle empty inputs cleanly so the script doesn't waste resources trying to resolve a blank target.
-- **Exception Handling (`socket.gaierror`)**: Security tools must be resilient. I implemented `try/except` blocks to catch invalid domains or network disconnections gracefully instead of letting the program crash.
 
-## 🧠 What I Learned Today (Day 3)
-Today, I built the core scanning engine using Python's `socket` library. I learned how the **TCP Three-Way Handshake** works under the hood for reconnaissance:
-- **`socket.socket(socket.AF_INET, socket.SOCK_STREAM)`**: Initializes a fresh network connection pathway configured for IPv4 and the TCP protocol.
-- **`s.settimeout(1.0)`**: Crucial for tool performance. Prevents the scanner from getting stuck hanging indefinitely if a remote target is hidden behind an aggressive network firewall.
-- **`s.connect_ex()`**: Performs a low-level handshake knock on the port. If it catches a return value of `0`, the socket successfully established a connection (**Port is OPEN**). Any other error number indicates the port is closed or filtered.
-- **Resource Management**: I learned that every opened socket connection must be explicitly terminated with `s.close()` to avoid operating system memory leaks.
 
-## 🧠 What I Learned Today (Day 4)
-Today, I advanced the single-port script into a true **Port Range Scanner** by introducing looping control structures:
-- **`for port in range(start, end + 1)`**: I learned that Python's `range()` function is exclusive of the upper bound. Adding `+ 1` ensures that the final port selected by the user is actually scanned.
-- **Data Type Conversion**: Since user inputs via `input()` are strictly string data types, I utilized `int()` to explicitly convert inputs into integers so they work natively with network port calculations.
-- **UI Optimization**: Modified the connection engine to suppress logging "CLOSED" ports. This keeps the terminal clear and highlights only actionable intelligence (**OPEN** ports).
-- **Linear Time Complexity**: Observed that scanning sequentially scales execution time linearly ($O(n)$) based on the size of the port range, setting up the exact performance issue I will solve later with multi-threading.
+---
 
-## 🧠 What I Learned Today (Day 5)
-Today, I advanced the scanner from simple port detection to **Application Exposure Assessment** via Banner Grabbing:
-- **Service Enumeration**: I learned that open ports run background software that broadcasts a greeting string (banner) upon connection. Capturing this helps security analysts identify software names and exact versions to map potential CVE vulnerabilities.
-- **Data Stream Catching (`s.recv(1024)`)**: Implemented a data buffer constraint to capture up to 1024 bytes of raw binary data directly from the active network socket channel.
-- **Data Normalization (`.decode(errors='ignore')`)**: Networks transmit raw bytes. I utilized string decoding configurations to format network traffic into clean, readable text strings while bypassing unmapped security characters.
-- **Nested Timeout Protections**: Learned that many defensive services or standard web servers (like Google on Port 80) remain silent until a valid client payload is sent. Handling `socket.timeout` within the execution tree prevents quiet services from breaking scanner flow.
+## 🚀 Core Features
 
-## 🧠 What I Learned Today (Day 6)
-Today, I implemented **Service Mapping and Asset Identification** to translate raw numbers into meaningful intelligence:
-- **IANA Port Protocol Standards**: Learned that ports 0-1023 are "Well-Known Ports" reserved for fundamental structural services (like SSH, HTTP, and HTTPS).
-- **Dynamic OS Database Queries (`socket.getservbyport`)**: Instead of hardcoding thousands of ports manually, I leveraged native OS lookup functions to query the local network services translation layer dynamically.
-- **Failover Logic (Dictionary Backups)**: Created a hybrid lookup model. The tool first queries the system database; if the service is non-standard or unregistered, it gracefully drops back to a custom Python dictionary map or defaults cleanly to an "Unknown Service" string.
+* ⚡ **High-Speed Execution Engine**: Leverages a synchronized `ThreadPoolExecutor` framework allocating 50 background workers to probe hundreds of ports simultaneously.
+* 🧠 **Hybrid Service Mapping**: Queries local operating system service databases (`socket.getservbyport`) dynamically with an integrated hardcoded dictionary fallback for non-standard ports.
+* 🛡️ **Resilient Fault Isolation**: Suppresses expected network timeouts and connection resets quietly, preventing worker thread pool degradation during wide-range firewall scans.
+* 📋 **Automated Audit Logging**: Consolidates asynchronous thread findings into a structured, numerically sorted local text report (`scan_report.txt`).
 
-## 🧠 What I Learned Today (Day 7)
-Today, I addressed the core efficiency problem of network probing by transitioning from a sequential framework to a **Concurrent Multi-Threaded Engine**:
-- **Concurrency vs. Parallelism**: Understood how splitting execution pathways allows multiple socket connection timeouts to elapse simultaneously instead of bottlenecking the CPU track linearly.
-- **Thread Optimization (`ThreadPoolExecutor`)**: Leveraged Python's `concurrent.futures` subsystem to implement an abstraction pool managing 50 worker threads, preventing memory crashes and socket depletion on the host OS.
-- **Asynchronous Execution Optimization**: Achieved an optimization leap scaling performance exponentially, cutting range inspection timelines for 1,000 ports from several minutes to mere seconds.
+---
 
-## 🧠 What I Learned Today (Day 8)
-Today, I transitioned the scanner from a volatile terminal-only application to a tool capable of permanent, structured logging by implementing **File Input/Output (I/O)**:
-- **Thread-Safe Data Collection**: Because multiple background worker threads operate simultaneously, writing directly to a file from a thread can cause stream race conditions. I implemented a global list bucket (`open_ports_found`) to safely cache findings in memory until the multi-threaded scanning phase finishes completely.
-- **Context Managers (`with open()`)**: Mastered Python's `with open(filename, mode)` design pattern. It ensures safe file stream lifecycles, automatically parsing allocations and flushing changes to disk even if mid-execution system exceptions occur.
-- **Output File Modes (`"w"`)**: Employed the absolute write configuration flag (`"w"`) to auto-instantiate the `scan_report.txt` asset. This systematically wipes outdated audit historical tracking data on boot to present a fresh, unpolluted infrastructure report.
+## 🛠️ Installation & Requirements
 
-## 🧠 What I Learned Today (Day 9)
-Today, I refactored the entire codebase to transform it into a professional, modular production script by applying clean software engineering principles:
-- **Eradicating Global State Variables**: Removed the volatile global list variable (`open_ports_found`). I learned that global variables create high risk for memory leaks and race conditions. Instead, tracking lists are now initialized locally within `main()` and passed explicitly as arguments down the execution tree.
-- **Single Responsibility Principle (SRP)**: Segregated the script logic into distinct, modular functional blocks. The file I/O operations were completely isolated into a dedicated `save_report()` function, separating reporting tasks from core scanning actions.
-- **Pythonic Docstring Standards**: Integrated structured triple-quote (`"""`) documentation directly under function definitions, detailing exact system lifecycles, entry parameters, and execution scopes.
+PortWatch relies exclusively on native Python standard libraries, meaning **zero external third-party dependencies** are required to run the tool.
+
+### Prerequisites
+* Python 3.x installed on your host operating system.
+
+### Setup
+1. Clone the repository to your local machine:
+   ```bash
+   git clone [https://github.com/sanamsaivenkat/PortWatch.git](https://github.com/sanamsaivenkat/PortWatch.git)
+   cd PortWatch
+
+2.Launch the utility:
+
+Bash
+python Scanner_script.py
+
+3.Terminal Interface(Output preview):
+
+=== PortWatch Scanner ===
+Enter target domain or IP (eg: google.com): test.rebex.net
+[*] Resolving Target: test.rebex.net....
+[*] Successfully resolved target IP address: 195.144.107.198....
+----------------------------------------
+Enter the starting port (eg: 20): 21
+Enter the ending port (eg: 25): 23
+________________________________________
+[*] Scanning started on 195.144.107.198 using 50 parallel workers....
+[*] Please wait...
+________________________________________
+[+] Port 21 (FTP): OPEN
+    [->] Banner Detected: 220 RebexFTP/1.0.3.0 FTP server ready
+[+] Port 22 (SSH): OPEN
+    [->] Banner Detected: SSH-2.0-RebexSSH_5.0.8712.0
+
+[+] Scan completed successfully.
+[*] Generating report file...
+[+] Success! Report saved to 'scan_report.txt'.
+
+->Generated scan_report.txt
+
+========================================
+          PORTWATCH SCAN REPORT         
+========================================
+Target Host: test.rebex.net (195.144.107.198)
+Scanned Range: 21 - 23
+----------------------------------------
+
+[+] Port 21 (FTP): OPEN
+    Banner Detected: 220 RebexFTP/1.0.3.0 FTP server ready
+
+[+] Port 22 (SSH): OPEN
+    Banner Detected: SSH-2.0-RebexSSH_5.0.8712.0
+
+========================================
+Scan terminated cleanly.
+
+10-Day Engineering Journey
+This tool was systematically developed over a 10-day agile engineering cycle to master low-level network socket layers and asynchronous execution patterns:
+
+Day 1: Repository instantiation, architectural blueprints, and target configuration workflows.
+
+Day 2: Sanitization engines, boundary input controls, and system failure exceptions.
+
+Day 3: Low-level TCP socket stream initialization and connection handling configurations.
+
+Day 4: Iterative range scanning algorithms and network parameter boundary controls.
+
+Day 5: Dynamic application layer banner signature extraction and timeout catch blocks.
+
+Day 6: IANA protocol identification and systemic OS network translation integrations.
+
+Day 7: Concurrency scaling using abstracted asynchronous ThreadPoolExecutor workers.
+
+Day 8: Structured file system streams and persistent data capture layers.
+
+Day 9: Code refactoring, global state eradication, and clean modular decoupling.
+
+Day 10: Production repository documentation compilation and deployment testing.
+
+⚠️ Disclaimer: This tool is designed explicitly for authorized security auditing, educational research, and internal network maintenance. Probing external infrastructures without explicit written consent is illegal.
